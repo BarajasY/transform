@@ -1,5 +1,7 @@
+"use client"
 import Image from 'next/image'
 import styles from './page.module.css'
+import {invoke }from "@tauri-apps/api/tauri";
 
 export default function Home() {
   return (
@@ -90,6 +92,7 @@ export default function Home() {
           </p>
         </a>
       </div>
+      <button onClick={() => invoke("write")}>Hola</button>
     </main>
   )
 }
