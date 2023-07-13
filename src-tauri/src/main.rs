@@ -10,6 +10,8 @@ use std::{
     fs::{self},
 };
 use webp::Encoder;
+use utils::remove_extension;
+mod utils;
 
 fn main() {
     tauri::Builder::default()
@@ -27,10 +29,8 @@ fn write() {
 fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
     let path: String = path_string;
 
-    println!("{}", path);
     //Creating empty array/vector of Strings
     let mut file_names_vec: Vec<String> = Vec::new();
-    let mut paths_vec: Vec<String> = Vec::new();
     let mut folders_vec: Vec<String> = Vec::new();
 
     //Reads all the directories existing in the path supplied.
@@ -61,23 +61,22 @@ fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
     }
 
     //Pushes into paths_vec the String of the PATH name
-    for file in &mut file_names_vec {
+/*     for file in &mut file_names_vec {
         paths_vec.push(format!("{}/{}", &path, file));
-    }
+    } */
 
     for folder in folders {
         folders_vec.push(String::from(folder.path().to_str().unwrap()))
     }
 
     //Returns vector.
-    (file_names_vec, paths_vec, folders_vec)
+    (file_names_vec, utils::divide_paths(path), folders_vec)
 }
 
 #[tauri::command]
 fn make_webp(path_file: String, quality: f32, file_name: String) -> String {
     let test = format!("{}/{}", path_file, file_name);
     /*       test.push_str(file_name.as_str()); */
-    println!("{}", test);
     //Opens the image file using image::open and taking path as argument.
     let image = open(test).unwrap();
 
@@ -90,17 +89,10 @@ fn make_webp(path_file: String, quality: f32, file_name: String) -> String {
     //Gets the bytes out of the encoded image.
     let image_bytes = quality.deref();
 
-    let created_file_path = format!("{}/{}.webp", &path_file, file_name);
+    let created_file_path = format!("{}/{}.webp", &path_file, remove_extension(file_name));
     //Creates an empty file with .webp extension.
     let mut webp_image = File::create(created_file_path).unwrap();
     //Fills the empty .webp file with bytes from image_bytes.
     webp_image.write_all(image_bytes).unwrap();
     String::from("Webp file created successfully!")
 }
-
-/*
-fn remove_extension(name: &mut String) -> String {
-  name.truncate(name.len() - 4);
-  name.to_owned()
-}
- */
