@@ -1,0 +1,15 @@
+* {
+  padding: 0px;
+  margin: 0px;
+  box-sizing: content-box;
+  transition: .2s;
+}
+
+:root {
+  --darkblue: #08445d;
+  --darkred:#c90808;
+  --darkmint: #004e50;
+  --bpurple: #3821e6;
+  --green:#54d990;
+  --cyan: #4cbfa5;
+}
