@@ -1,15 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use image::open;
+use std::fs::File;
+use std::io::Write;
+use std::ops::Deref;
 use std::{
     ffi::OsStr,
-    fs::{self}
+    fs::{self},
 };
-
-use std::ops::Deref;
-use std::io::Write;
-use std::fs::File;
-use image::open;
 use webp::Encoder;
 
 fn main() {
@@ -47,17 +46,19 @@ fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
     //Removes the extension the image has.
     //Converts DirEntry to String
     //Pushes into file_names_vec.
-    for image in images {
+    /*     for image in images {
       file_names_vec.push(remove_extension(&mut String::from(image.file_name().to_str().unwrap())));
-    }
+    } */
 
     //Filters the directories. Keeps those who are folders.
-    let folders = paths2.filter_map(Result::ok).filter(|f| f.file_type().unwrap().is_dir());
+    let folders = paths2
+        .filter_map(Result::ok)
+        .filter(|f| f.file_type().unwrap().is_dir());
 
     //Converts "ReadDir" to String and pushes into vector.
-/*     for image in &images {
+    for image in images {
         file_names_vec.push(String::from(image.file_name().to_str().unwrap()));
-    } */
+    }
 
     //Pushes into paths_vec the String of the PATH name
     for file in &mut file_names_vec {
@@ -73,27 +74,33 @@ fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
 }
 
 #[tauri::command]
-fn make_webp(path_file: String, quality: f32, file_name: String) {
-      //Opens the image file using image::open and taking path as argument.
-      let image = open(&path_file).unwrap();
+fn make_webp(path_file: String, quality: f32, file_name: String) -> String {
+    let test = format!("{}/{}", path_file, file_name);
+    /*       test.push_str(file_name.as_str()); */
+    println!("{}", test);
+    //Opens the image file using image::open and taking path as argument.
+    let image = open(test).unwrap();
 
-      // Created the encoder of the image out of the image itself.
-      let encoder = Encoder::from_image(&image).unwrap();
+    // Created the encoder of the image out of the image itself.
+    let encoder = Encoder::from_image(&image).unwrap();
 
-      //Encodes the encoder taking quality (float) as an argument (Take this as the level of compression that the image will have)
-      let quality = encoder.encode(quality);
+    //Encodes the encoder taking quality (float) as an argument (Take this as the level of compression that the image will have)
+    let quality = encoder.encode(quality);
 
-      //Gets the bytes out of the encoded image.
-      let image_bytes = quality.deref();
+    //Gets the bytes out of the encoded image.
+    let image_bytes = quality.deref();
 
-      let created_file_path = format!("{}/{}.webp", &path_file, file_name);
-      //Creates an empty file with .webp extension.
-      let mut webp_image = File::create(created_file_path).unwrap();
-      //Fills the empty .webp file with bytes from image_bytes.
-      webp_image.write_all(image_bytes).unwrap()
+    let created_file_path = format!("{}/{}.webp", &path_file, file_name);
+    //Creates an empty file with .webp extension.
+    let mut webp_image = File::create(created_file_path).unwrap();
+    //Fills the empty .webp file with bytes from image_bytes.
+    webp_image.write_all(image_bytes).unwrap();
+    String::from("Webp file created successfully!")
 }
 
+/*
 fn remove_extension(name: &mut String) -> String {
   name.truncate(name.len() - 4);
   name.to_owned()
 }
+ */

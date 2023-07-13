@@ -13,3 +13,16 @@
   --green:#54d990;
   --cyan: #4cbfa5;
 }
+
+::-webkit-scrollbar {
+  width: 10px;
+  background: whitesmoke;
+}
+
+::-webkit-scrollbar-thumb {
+  background: white;
+}
+
+::-webkit-scrollbar-track {
+  background-color: black;
+}
