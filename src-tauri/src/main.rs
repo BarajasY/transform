@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use image::open;
 use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
@@ -9,13 +8,16 @@ use std::{
     ffi::OsStr,
     fs::{self},
 };
-use webp::Encoder;
-use utils::remove_extension;
+use utils::{edit_json, get_json, get_quality_from_json, get_start_from_json, remove_extension};
 mod utils;
+use webp::{Encoder, WebPMemory};
+
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![write, dirs, make_webp])
+        .invoke_handler(tauri::generate_handler![
+            write, dirs, make_webp, edit_json, get_json
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -26,8 +28,13 @@ fn write() {
 }
 
 #[tauri::command]
-fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
-    let path: String = path_string;
+fn dirs(path_string: Option<String>) -> (Vec<String>, Vec<String>, Vec<String>) {
+    let path = match path_string {
+        Some(s) => s,
+        None => get_start_from_json(),
+    };
+    /*     let path: String = path_string; */
+    println!("{}", path);
 
     //Creating empty array/vector of Strings
     let mut file_names_vec: Vec<String> = Vec::new();
@@ -61,7 +68,7 @@ fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
     }
 
     //Pushes into paths_vec the String of the PATH name
-/*     for file in &mut file_names_vec {
+    /*     for file in &mut file_names_vec {
         paths_vec.push(format!("{}/{}", &path, file));
     } */
 
@@ -74,14 +81,29 @@ fn dirs(path_string: String) -> (Vec<String>, Vec<String>, Vec<String>) {
 }
 
 #[tauri::command]
-fn make_webp(path_file: String, quality: f32, file_name: String) -> String {
-    let test = format!("{}/{}", path_file, file_name);
-    /*       test.push_str(file_name.as_str()); */
+fn make_webp(path_file: Option<String>, file_name: String) -> Option<String> {
+    let path_file_no_option = match path_file {
+        Some(p) => p,
+        None => get_start_from_json(),
+    };
+
+    let path_to_image = format!("{}/{}", path_file_no_option, file_name);
+    println!("{}", path_to_image);
+
     //Opens the image file using image::open and taking path as argument.
-    let image = open(test).unwrap();
+    let image = image::io::Reader::open(path_to_image).unwrap().with_guessed_format().unwrap().decode().unwrap();
+/*     let image: DynamicImage = match image {
+        Ok(img) => img.with_guessed_format().unwrap().decode().unwrap(), //ImageReader::with_guessed_format() function guesses if image needs to be opened in JPEG or PNG format.
+        Err(e) => {
+            println!("Error: {}", e);
+            return None;
+        }
+    }; */
 
     // Created the encoder of the image out of the image itself.
-    let encoder = Encoder::from_image(&image).unwrap();
+    let encoder:Encoder = Encoder::from_image(&image).unwrap();
+
+    let quality = get_quality_from_json();
 
     //Encodes the encoder taking quality (float) as an argument (Take this as the level of compression that the image will have)
     let quality = encoder.encode(quality);
@@ -89,10 +111,19 @@ fn make_webp(path_file: String, quality: f32, file_name: String) -> String {
     //Gets the bytes out of the encoded image.
     let image_bytes = quality.deref();
 
-    let created_file_path = format!("{}/{}.webp", &path_file, remove_extension(file_name));
+    let created_file_path = format!(
+        "{}/{}.webp",
+        &path_file_no_option,
+        remove_extension(file_name)
+    );
     //Creates an empty file with .webp extension.
     let mut webp_image = File::create(created_file_path).unwrap();
     //Fills the empty .webp file with bytes from image_bytes.
-    webp_image.write_all(image_bytes).unwrap();
-    String::from("Webp file created successfully!")
+    match webp_image.write_all(image_bytes) {
+        Err(e) => {
+            println!("Error: {}", e);
+            None
+        },
+        Ok(_) => Some("File created succesfully".to_string())
+    }
 }

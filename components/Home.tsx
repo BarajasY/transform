@@ -6,7 +6,6 @@ import { BsArrowRight } from "react-icons/bs";
 import { AiOutlineClose } from "react-icons/ai";
 import { FiSettings } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
-import data from "@/public/config.json";
 import { form_path } from "./utils";
 
 const Home = () => {
@@ -14,14 +13,14 @@ const Home = () => {
   const [FileImages, setFileImages] = useState<string[]>([]);
   const [Folders, setFolders] = useState<string[]>([""]);
   const [Settings, setSettings] = useState(false);
-  const [CurrentPath, setCurrentPath] = useState("");
+  const [Quality, setQuality] = useState(0.0)
+  const [InitialPath, setInitialPath] = useState("")
+  const [CurrentPath, setCurrentPath] = useState<string | null>("");
   const [Success, setSuccess] = useState(false);
-  const InitialPath = "";
 
-  const handleInvoke = (folderPath: string) => {
-    let path = InitialPath + folderPath;
-    setCurrentPath(path);
-    invoke("dirs", { pathString: path }).then((p: any) => {
+  const handleInvoke = (folderPath: string | null) => {
+    setCurrentPath(folderPath);
+    invoke("dirs", { pathString: folderPath }).then((p: any) => {
       setFileImages(p[0]);
       setPathConstructor(p[1]);
       setFolders(p[2]);
@@ -31,7 +30,6 @@ const Home = () => {
   const createWebp = (fileName: string) => {
     invoke("make_webp", {
       pathFile: CurrentPath,
-      quality: 75.0,
       fileName,
     }).then((s) => successHandler(s));
   };
@@ -42,6 +40,19 @@ const Home = () => {
       setSuccess(false);
     }, 1200);
   };
+
+  const saveJson = () => {
+    invoke("edit_json", {initialPath: InitialPath, quality:Quality})
+    setSettings(!Settings)
+  }
+
+  const getJson = () => {
+    invoke("get_json").then((json:any) => {
+      setInitialPath(json.start)
+      setQuality(json.quality)
+    })
+    setSettings(!Settings)
+  }
 
   return (
     <>
@@ -73,8 +84,8 @@ const Home = () => {
                 </p>
                 <input
                   type="text"
-                  placeholder="C:\Users\user\Desktop"
-                  onChange={(e) => (data.start = e.target.value)}
+                  placeholder={InitialPath}
+                  onChange={(e) => setInitialPath(e.target.value)}
                 />
               </section>
               <section>
@@ -87,12 +98,12 @@ const Home = () => {
                 </p>
                 <input
                   type="number"
-                  placeholder={data.quality.toString() + ".0"}
-                  onChange={(e) => (data.quality = Number(e.target.value))}
+                  placeholder={Quality.toString() + ".0"}
+                  onChange={(e) => setQuality(Number(e.target.value))}
                 />
               </section>
               <section>
-                <button onClick={() => setSettings(!Settings)}>Submit</button>
+                <button onClick={() => saveJson()}>Submit</button>
               </section>
             </div>
           )}
@@ -110,7 +121,7 @@ const Home = () => {
               ))}
             </p>
             <FiSettings
-              onClick={() => setSettings(!Settings)}
+              onClick={() => getJson()}
               className={style.OpenSettings}
             />
           </div>
@@ -152,7 +163,7 @@ const Home = () => {
               </>
             )}
           </div>
-          <button onClick={() => handleInvoke(data.start)}>Start</button>
+          <button onClick={() => handleInvoke(null)}>Start</button>
         </div>
       </AnimatePresence>
     </>
