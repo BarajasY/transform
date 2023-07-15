@@ -6,16 +6,16 @@ import { BsArrowRight } from "react-icons/bs";
 import { AiOutlineClose } from "react-icons/ai";
 import { FiSettings } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
-import { form_path } from "./utils";
+import { form_path, loadConfig, saveConfig } from "./utils";
 
 const Home = () => {
   const [PathConstructor, setPathConstructor] = useState([""]);
   const [FileImages, setFileImages] = useState<string[]>([]);
   const [Folders, setFolders] = useState<string[]>([""]);
   const [Settings, setSettings] = useState(false);
-  const [Message, setMessage] = useState("")
-  const [Quality, setQuality] = useState(0.0)
-  const [InitialPath, setInitialPath] = useState("")
+  const [Message, setMessage] = useState("");
+  const [Quality, setQuality] = useState(0.0);
+  const [InitialPath, setInitialPath] = useState("/");
   const [CurrentPath, setCurrentPath] = useState<string | null>("");
   const [Success, setSuccess] = useState(false);
 
@@ -32,11 +32,12 @@ const Home = () => {
     invoke("make_webp", {
       pathFile: CurrentPath,
       fileName,
+      quality: Quality,
     }).then((s) => successHandler(s));
   };
 
   const successHandler = (s: any) => {
-    setMessage(s)
+    setMessage(s);
     setSuccess(true);
     setTimeout(() => {
       setSuccess(false);
@@ -44,17 +45,23 @@ const Home = () => {
   };
 
   const saveJson = () => {
-    invoke("edit_json", {initialPath: InitialPath, quality:Quality}).then(p => successHandler(p))
-    setSettings(!Settings)
-  }
+    saveConfig(InitialPath, Quality);
+    setSettings(!Settings);
+  };
 
   const getJson = () => {
-    invoke("get_json").then((json:any) => {
-      setInitialPath(json.start)
-      setQuality(json.quality)
-    })
-    setSettings(!Settings)
-  }
+    const loaded = loadConfig();
+    setInitialPath(loaded.start!);
+    setQuality(Number(loaded.quality));
+    setSettings(!Settings);
+  };
+
+  const startWithConfig = () => {
+    const loaded = loadConfig();
+    setInitialPath(loaded.start! ?? "/");
+    setQuality(Number(loaded.quality) ?? 75.0);
+    handleInvoke(loaded.start);
+  };
 
   return (
     <>
@@ -165,7 +172,7 @@ const Home = () => {
               </>
             )}
           </div>
-          <button onClick={() => handleInvoke(null)}>Start</button>
+          <button onClick={() => startWithConfig()}>Start</button>
         </div>
       </AnimatePresence>
     </>

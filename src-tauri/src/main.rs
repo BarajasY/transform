@@ -9,7 +9,7 @@ use std::{
     fs::{self},
 };
 use tauri::AppHandle;
-use utils::{edit_json, get_json, get_quality_from_json, get_start_from_json, remove_extension};
+use utils::{edit_json, get_json, get_start_from_json, remove_extension};
 mod utils;
 use webp::Encoder;
 
@@ -82,10 +82,10 @@ fn dirs(path_string: Option<String>, handle: AppHandle) -> (Vec<String>, Vec<Str
 }
 
 #[tauri::command]
-fn make_webp(path_file: Option<String>, file_name: String, handle: AppHandle) -> Option<String> {
+fn make_webp(path_file: Option<String>, file_name: String, quality: f32 ,handle: AppHandle) -> Option<String> {
     let path_file_no_option = match path_file {
         Some(p) => p,
-        None => get_start_from_json(handle.clone()),
+        None => get_start_from_json(handle),
     };
 
     let path_to_image = format!("{}/{}", path_file_no_option, file_name);
@@ -103,8 +103,6 @@ fn make_webp(path_file: Option<String>, file_name: String, handle: AppHandle) ->
 
     // Created the encoder of the image out of the image itself.
     let encoder:Encoder = Encoder::from_image(&image).unwrap();
-
-    let quality = get_quality_from_json(handle);
 
     //Encodes the encoder taking quality (float) as an argument (Take this as the level of compression that the image will have)
     let quality = encoder.encode(quality);
