@@ -13,6 +13,7 @@ const Home = () => {
   const [FileImages, setFileImages] = useState<string[]>([]);
   const [Folders, setFolders] = useState<string[]>([""]);
   const [Settings, setSettings] = useState(false);
+  const [Message, setMessage] = useState("")
   const [Quality, setQuality] = useState(0.0)
   const [InitialPath, setInitialPath] = useState("")
   const [CurrentPath, setCurrentPath] = useState<string | null>("");
@@ -35,14 +36,15 @@ const Home = () => {
   };
 
   const successHandler = (s: any) => {
+    setMessage(s)
     setSuccess(true);
     setTimeout(() => {
       setSuccess(false);
-    }, 1200);
+    }, 800);
   };
 
   const saveJson = () => {
-    invoke("edit_json", {initialPath: InitialPath, quality:Quality})
+    invoke("edit_json", {initialPath: InitialPath, quality:Quality}).then(p => successHandler(p))
     setSettings(!Settings)
   }
 
@@ -65,7 +67,7 @@ const Home = () => {
               exit={{ opacity: 0 }}
               className={style.successTooltip}
             >
-              Successfully created webp!
+              {Message}
             </motion.p>
           )}
 

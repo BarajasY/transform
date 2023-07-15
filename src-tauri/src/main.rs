@@ -8,6 +8,7 @@ use std::{
     ffi::OsStr,
     fs::{self},
 };
+use tauri::AppHandle;
 use utils::{edit_json, get_json, get_quality_from_json, get_start_from_json, remove_extension};
 mod utils;
 use webp::Encoder;
@@ -20,6 +21,7 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
 }
 
 #[tauri::command]
@@ -28,13 +30,13 @@ fn write() {
 }
 
 #[tauri::command]
-fn dirs(path_string: Option<String>) -> (Vec<String>, Vec<String>, Vec<String>) {
+fn dirs(path_string: Option<String>, handle: AppHandle) -> (Vec<String>, Vec<String>, Vec<String>) {
     let path = match path_string {
         Some(s) => s,
-        None => get_start_from_json(),
+        None => get_start_from_json(handle),
     };
+    print!("{}", path);
     /*     let path: String = path_string; */
-    println!("{}", path);
 
     //Creating empty array/vector of Strings
     let mut file_names_vec: Vec<String> = Vec::new();
@@ -47,7 +49,6 @@ fn dirs(path_string: Option<String>) -> (Vec<String>, Vec<String>, Vec<String>) 
     //Filters the directories by extension == png or jpg
     let images = paths.filter_map(Result::ok).filter(|d| {
         d.path().extension() == Some(OsStr::new("png"))
-            || d.path().extension() == Some(OsStr::new("jpg"))
     });
 
     //Removes the extension the image has.
@@ -81,10 +82,10 @@ fn dirs(path_string: Option<String>) -> (Vec<String>, Vec<String>, Vec<String>) 
 }
 
 #[tauri::command]
-fn make_webp(path_file: Option<String>, file_name: String) -> Option<String> {
+fn make_webp(path_file: Option<String>, file_name: String, handle: AppHandle) -> Option<String> {
     let path_file_no_option = match path_file {
         Some(p) => p,
-        None => get_start_from_json(),
+        None => get_start_from_json(handle.clone()),
     };
 
     let path_to_image = format!("{}/{}", path_file_no_option, file_name);
@@ -103,7 +104,7 @@ fn make_webp(path_file: Option<String>, file_name: String) -> Option<String> {
     // Created the encoder of the image out of the image itself.
     let encoder:Encoder = Encoder::from_image(&image).unwrap();
 
-    let quality = get_quality_from_json();
+    let quality = get_quality_from_json(handle);
 
     //Encodes the encoder taking quality (float) as an argument (Take this as the level of compression that the image will have)
     let quality = encoder.encode(quality);

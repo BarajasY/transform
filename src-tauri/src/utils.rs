@@ -1,4 +1,7 @@
-use serde::{Serialize, Deserialize};
+use std::fs;
+
+use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 
 pub fn divide_paths(path: String) -> Vec<String> {
     let path_vec_str: Vec<&str> = path.split('/').collect();
@@ -19,52 +22,64 @@ pub fn remove_extension(name: String) -> String {
 
 #[derive(Serialize, Deserialize)]
 pub struct JsonFile {
-  start: String,
-  quality: f32
+    start: String,
+    quality: f32,
 }
 
 #[tauri::command]
-pub fn edit_json(initial_path: String, quality: f32) -> String {
-    let mut file = {
-        let text = std::fs::read_to_string("src/config.json").unwrap();
-        serde_json::from_str::<JsonFile>(&text).unwrap()
+pub fn edit_json(initial_path: String, quality: f32, handle: AppHandle) -> String {
+    let resource = handle
+        .path_resolver()
+        .resolve_resource("resources/config.json")
+        .expect("Error resolving resource");
+
+    let mut file: JsonFile = {
+        let text = std::fs::File::open(&resource).unwrap();
+        serde_json::from_reader(text).unwrap()
     };
 
     file.start = initial_path;
     file.quality = quality;
 
-    /* file["start"] = Value::String(initial_path);
-    file["quality"] = Value::as_f64(quality); */
-
-    std::fs::write(
-        "src/config.json",
-        serde_json::to_string_pretty(&file).unwrap(),
-    )
-    .unwrap();
-
-  "File updated successfully".to_string()
+    match std::fs::write(&resource, serde_json::to_string_pretty(&file).unwrap()) {
+        Ok(_) => "File updated successfully".to_string(),
+        Err(e) => format!("{}", e)
+    }
 }
 
-pub fn get_quality_from_json() -> f32 {
-  let file = {
-    let text = std::fs::read_to_string("src/config.json").unwrap();
-    serde_json::from_str::<JsonFile>(&text).unwrap()
-  };
+pub fn get_quality_from_json(handle: AppHandle) -> f32 {
+    let resource = handle
+        .path_resolver()
+        .resolve_resource("resources/config.json")
+        .expect("Error resolving resource");
 
-  file.quality
+    let file: JsonFile = {
+        let text = std::fs::File::open(resource).unwrap();
+        serde_json::from_reader(text).unwrap()
+    };
+
+    file.quality
 }
 
-pub fn get_start_from_json() -> String {
-  let file = {
-    let text = std::fs::read_to_string("src/config.json").unwrap();
-    serde_json::from_str::<JsonFile>(&text).unwrap()
-  };
+pub fn get_start_from_json(handle: AppHandle) -> String {
+    let resource = handle
+        .path_resolver()
+        .resolve_resource("resources/config.json")
+        .expect("Error resolving resource");
+    let file: JsonFile = {
+        let text = std::fs::File::open(resource).unwrap();
+        serde_json::from_reader(text).unwrap()
+    };
 
-  file.start
+    file.start
 }
 
 #[tauri::command]
-pub fn get_json() -> JsonFile {
-    let text = std::fs::read_to_string("src/config.json").unwrap();
-    serde_json::from_str::<JsonFile>(&text).unwrap()
+pub fn get_json(handle: AppHandle) -> JsonFile {
+    let resource = handle
+        .path_resolver()
+        .resolve_resource("resources/config.json")
+        .expect("Error resolving resource");
+    let text = std::fs::File::open(resource).unwrap();
+    serde_json::from_reader(text).unwrap()
 }
