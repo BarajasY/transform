@@ -10,7 +10,7 @@ use std::{
 };
 use utils::{edit_json, get_json, get_quality_from_json, get_start_from_json, remove_extension};
 mod utils;
-use webp::{Encoder, WebPMemory};
+use webp::Encoder;
 
 
 fn main() {
